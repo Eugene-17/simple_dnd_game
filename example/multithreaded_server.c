@@ -7,21 +7,31 @@
 #include<fcntl.h> // for open
 #include<unistd.h> // for close
 #include<pthread.h>
+
 char client_message[2000];
 char buffer[1024];
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 void * socketThread(void *arg)
 {
   int newSocket = *((int *)arg);
   recv(newSocket , client_message , 2000 , 0);
+
   // Send message to the client socket 
   pthread_mutex_lock(&lock);
+
   char *message = malloc(sizeof(client_message)+20);
+
   strcpy(message,"Hello Client : ");
+
   strcat(message,client_message);
+
   strcat(message,"\n");
+
   strcpy(buffer,message);
+
   free(message);
+  
   pthread_mutex_unlock(&lock);
   sleep(1);
   send(newSocket,buffer,13,0);
@@ -29,6 +39,7 @@ void * socketThread(void *arg)
   close(newSocket);
   pthread_exit(NULL);
 }
+
 int main(){
   int serverSocket, newSocket;
   struct sockaddr_in serverAddr;
@@ -47,8 +58,9 @@ int main(){
   memset(serverAddr.sin_zero, '\0', sizeof serverAddr.sin_zero);
   //Bind the address struct to the socket 
   bind(serverSocket, (struct sockaddr *) &serverAddr, sizeof(serverAddr));
-  //Listen on the socket, with 40 max connection requests queued 
-  if(listen(serverSocket,50)==0)
+  
+  //Listen on the socket, with 64 max connection requests queued 
+  if(listen(serverSocket,64)==0)
     printf("Listening\n");
   else
     printf("Error\n");

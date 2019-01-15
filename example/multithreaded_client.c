@@ -7,6 +7,7 @@
 #include <fcntl.h> // for open
 #include <unistd.h> // for close
 #include<pthread.h>
+
 void * cientThread(void *arg)
 {
   printf("In thread\n");
@@ -43,6 +44,7 @@ void * cientThread(void *arg)
     close(clientSocket);
     pthread_exit(NULL);
 }
+
 int main(){
   int i = 0;
   pthread_t tid[51];
