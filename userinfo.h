@@ -1,5 +1,5 @@
 typedef struct user_info {
-    char user_name[32];
+    char username[32];
     int HP;
     int MP;
 } USER_INFO;

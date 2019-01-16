@@ -8,14 +8,21 @@
 #include <unistd.h> // for close
 #include<pthread.h>
 
+#include "util.h"
+
 
 #define MAXLINE 4096 /*max text line length*/
 #define SERV_PORT 3000 /*port*/
+#define MESSAGE_SIZE 128
 
 int main(int argc, char **argv) {
 
-    char message[2048];
-    char buffer[1024];
+    char username[32];
+    char password[32];
+
+    char client_message[MESSAGE_SIZE];
+    char server_message[MESSAGE_SIZE];
+
     int clientSocket;
     struct sockaddr_in serverAddr;
     socklen_t addr_size;
@@ -32,21 +39,96 @@ int main(int argc, char **argv) {
     memset(serverAddr.sin_zero, '\0', sizeof serverAddr.sin_zero);
     //Connect the socket to the server using the address
     addr_size = sizeof serverAddr;
-    connect(clientSocket, (struct sockaddr *) &serverAddr, addr_size);
 
-    strcpy(message,"Hello");
+    if(connect(clientSocket, (struct sockaddr *) &serverAddr, addr_size)<0){
+        printf("Connection failed. \n");
+        return -1;
+    }
+    else printf("Connected to server. \n");
 
-    if(send(clientSocket , message , strlen(message) , 0) < 0){
+    //Game started
+
+    // Login
+    while(1){
+        //empty message
+        memset(server_message, 0, sizeof(server_message));
+        memset(client_message, 0, sizeof(client_message));
+        //empty username
+        while(1){
+            memset(username, 0, sizeof(username));
+            printf("Username     : ");
+            get_input(username);
+            if(contain_white_space_or_empty(username)==1){
+                printf("Username should not have space!\n"); 
+                continue;
+            }
+            if(contain_white_space_or_empty(username)==2){
+                printf("Username should not be empty!\n"); 
+                continue;
+            }
+            break;
+        }
+
+        while(1){
+            memset(password, 0, sizeof(password));
+            printf("Password     : ");
+            get_input(password);
+            if(contain_white_space_or_empty(password)==1){
+                printf("Password should not have space!\n"); 
+                continue;
+            }
+            if(contain_white_space_or_empty(password)==2){
+                printf("Password should not be empty!\n"); 
+                continue;
+            }
+            break;
+        }
+        // LOGIN username password
+        strcpy(client_message, "LOGIN ");
+        strcat(client_message, username);
+        strcat(client_message, " ");
+        strcat(client_message, password);
+        strcat(client_message, "");
+
+        if(send(clientSocket , client_message , strlen(client_message) , 0) < 0){
             printf("Send failed\n");
+        }
+
+        //Read the client_message from the server into the server_message
+        if(recv(clientSocket, server_message, 2048, 0) < 0){
+            printf("Receive failed\n");
+        }
+        //Print the received client_message
+        printf("Data received: \"%s\"\n", server_message);
+        if(strcmp("NOUSER",server_message)==0) printf("Can't find that user!\n");
+        if(strcmp("WRONGPASS",server_message)==0) printf("Wrong password!\n");
+        if(strcmp("OK",server_message)==0) break;
+
     }
 
-    //Read the message from the server into the buffer
-    if(recv(clientSocket, buffer, 1024, 0) < 0){
-       printf("Receive failed\n");
+    //Gameplay
+    while(1){
+        //empty message
+        memset(server_message, 0, sizeof(server_message));
+        memset(client_message, 0, sizeof(client_message));
+        printf("Your command     : ");
+        get_input(client_message);
+        
+        if(send(clientSocket , client_message , strlen(client_message) , 0) < 0){
+            printf("Send failed\n");
+        }
+
+        //Read the client_message from the server into the server_message
+        if(recv(clientSocket, server_message, MESSAGE_SIZE, 0) < 0){
+            printf("Receive failed\n");
+        }
+
+        printf("Sent data: %s\n", client_message);
+        //Print the received client_message
+        printf("Data received: %s\n", server_message);
+        if(strcmp("exit",client_message)==0) break;
     }
-
-    //Print the received message
-    printf("Data received: %s\n",buffer);
-
     close(clientSocket);
+
+    return 0;
 }

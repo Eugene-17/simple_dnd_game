@@ -1,11 +1,13 @@
-server : server.o
-	gcc -o server server.o
+all : server client
 
-client : client.o
-	gcc -o client client.o
+server : server.o util.o login.o
+	gcc -o server server.o util.o login.o
 
-test : test.o login.o
-	gcc -o test test.o login.o
+client : client.o util.o
+	gcc -o client client.o util.o
+
+test : test.o login.o util.o
+	gcc -o test test.o login.o util.o
 
 server.o : server.c
 	gcc -c server.c

@@ -22,7 +22,7 @@ login_node * read_login_info(char *filename){
         username = ch;
         ch = strtok(NULL, "-");
         password = ch;
-
+        
         login_node *node = malloc(sizeof(login_node));
         node->username = strdup(username);
         node->password = strdup(password);
@@ -45,7 +45,7 @@ void print_login_info(login_node* head){
     current = NULL;
 
     for(current = head; current ; current=current->next){
-        printf("\n%s\n%s", current->username,current->password);
+        printf("- %s  %s\n", current->username,current->password);
     }
 };
 

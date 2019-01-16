@@ -1,7 +1,6 @@
 #include "util.h"
 
-char *trimwhitespace(char *str)
-{
+char *trimwhitespace(char *str){
   char *end;
 
   // Trim leading space
@@ -18,4 +17,23 @@ char *trimwhitespace(char *str)
   end[1] = '\0';
 
   return str;
+}
+
+// get input from stdin and remove trailing linebreak, if string is "\n" then convert it to ""
+void get_input(char* command){
+  fgets(command,128,stdin);
+  command = strtok(command, "\n");
+  if(strcmp(command,"\n")==0) strcpy(command,"");
+}
+
+//get a string, return 1 if string contain whitespace, 2 if string is empty or null
+int contain_white_space_or_empty(char* s){
+  
+  if(s[0]=='\0'||s==NULL) return 2;
+
+  while (*s != '\0') {
+    if(isspace((unsigned char)*s)) return 1;
+    s++;
+  }
+  return 0;
 }
