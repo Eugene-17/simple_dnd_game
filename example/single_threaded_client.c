@@ -9,9 +9,7 @@
 #define MAXLINE 4096 /*max text line length*/
 #define SERV_PORT 3000 /*port*/
 
-int
-main(int argc, char **argv) 
-{
+int main(int argc, char **argv) {
  int sockfd;
  struct sockaddr_in servaddr;
  char sendline[MAXLINE], recvline[MAXLINE];

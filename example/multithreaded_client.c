@@ -8,8 +8,7 @@
 #include <unistd.h> // for close
 #include<pthread.h>
 
-void * cientThread(void *arg)
-{
+void * cientThread(void *arg){
   printf("In thread\n");
   char message[1000];
   char buffer[1024];
