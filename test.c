@@ -4,6 +4,9 @@
 #include "login.h"
 
 int main(void){
-    print_login_info(read_login_info("login_info.txt"));
+    login_node* head; 
+    head = read_login_info("login_info.txt");
+
+    printf("\n%d\n",check_login(head,"BINH","123"));
     return 0;
 }

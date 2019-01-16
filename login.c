@@ -1,14 +1,17 @@
 #include "login.h"
 
+
+// read login info from a txt file and return the head of linked list containing the info
 login_node * read_login_info(char *filename){
     FILE *login_info_file;
     
     char temp[80];
-    char *ch;
-    char *username;
-    char *password;
+    char* ch;
+    char* username;
+    char* password;
 
-    login_node *head, *current;
+    login_node* head; 
+    login_node* current;
 
     head = current = NULL;
     login_info_file = fopen("login_info.txt", "r");
@@ -35,11 +38,28 @@ login_node * read_login_info(char *filename){
     return head;
 };
 
-void print_login_info(login_node * head){
-    login_node *current;
+
+// print the linked list to the screen
+void print_login_info(login_node* head){
+    login_node* current;
     current = NULL;
 
     for(current = head; current ; current=current->next){
         printf("\n%s\n%s", current->username,current->password);
     }
+};
+
+//check if the login is successful and return an int (1: success, 0: fail, -1: wrong password)
+int check_login(login_node* head, char* username, char* password){
+    login_node* current;
+    current = NULL;
+    
+    for(current = head; current ; current=current->next){
+        if(strcmp(username,current->username)==0){
+            if(strcmp(password,current->password)==0) return 1;
+            else return -1;
+        };
+    }
+
+    return 0;
 };
