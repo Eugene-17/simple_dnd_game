@@ -129,6 +129,15 @@ int main(int argc, char **argv) {
         
         //Print the received client_message
         printf("Server reply: %s\n", server_message);
+        if(strcmp("WIN",server_message)==0){
+            printf("Congratulation! YOU WIN!\n");
+            break;
+        }
+
+        if(strcmp("LOSE",server_message)==0){
+            printf("Too bad, you lose!\n");
+            break;
+        }
         if(strcmp("EXIT",client_message)==0) break;
     }
     close(clientSocket);

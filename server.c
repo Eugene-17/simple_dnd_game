@@ -18,6 +18,10 @@
 #define MAP_WIDTH 2
 #define MAP_HEIGHT 2
 
+#define USER_DAMAGE 10
+#define MONSTER_DAMAGE 3
+
+
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 login_node* login_database; // store login database taken from txt file
@@ -45,6 +49,7 @@ void * socketThread(void *arg){
 
     int login_flip;
     int user_count;
+    int damage;
 
     char* username;
     char* password;
@@ -57,15 +62,13 @@ void * socketThread(void *arg){
         memset(server_message, 0, sizeof(server_message));
         memset(client_message, 0, sizeof(client_message));
         memset(buffer, 0, sizeof(buffer));
-
+        if(active_user!= NULL&&current_user!=NULL) printf("Active user is: %s\n",active_user->username);
         if(recv(newSocket, client_message, MESSAGE_SIZE, 0) < 0){
             printf("Receive failed\n");
         }
         if(DEBUG) printf("Thead %d: \"%s\"\n", newSocket ,client_message);
 
         client_message_type = strtok(client_message, " "); //first call strok
-
-
 
         if(strcmp(client_message_type,"LOGIN")==0){
             username = strtok(NULL, " "); //second call strok
@@ -78,7 +81,10 @@ void * socketThread(void *arg){
                     user_data = create_new_user(username,1,1);
                     current_user = active_user = user_data; //become the first active player
                 }
-                else add_user(user_data, create_new_user(username,1,1));
+                else{
+                    current_user = create_new_user(username,1,1);
+                    add_user(user_data, current_user);
+                }
                 if(DEBUG) print_user_list(user_data);
 
                 printf("Player %s joined the game.\n", username);
@@ -93,7 +99,14 @@ void * socketThread(void *arg){
         }
 
         //At least 1 player active
+        
         //Command
+        if(monster_hp==0){ 
+            send(newSocket,"WIN",2048,0);
+        }
+        if(user_data->HP==0){ 
+            send(newSocket,"LOSE",2048,0);
+        }
         if(strcmp("EXIT",client_message)==0) {
             current_user->HP=0;
             break_flip=0;
@@ -114,6 +127,10 @@ void * socketThread(void *arg){
         if(strcmp(client_message_type,"INFO")==0){
             strcpy(server_message,"INFO: \n");
             strcat(server_message,"- USER : \n");
+            memset(buffer, 0, sizeof(buffer));
+            sprintf(buffer,"\t + Active user is: %s\n",active_user->username);
+            strcat(server_message,buffer);
+
             user_count=0;
             for(temp = user_data; temp ; temp=temp->next){
                 user_count++;
@@ -132,12 +149,16 @@ void * socketThread(void *arg){
         }
 
         //Turn bound actions:
-        printf("Active user is: %s\n",active_user->username);
+        
         //Send message to the client socket 
 
         if(current_user == active_user){
 
             //Make a move
+            if(current_user->HP==0){ 
+                send(newSocket,"You are dead and can't act!\n",2048,0);
+            }
+            else
             if(strcmp(client_message_type,"MOVE")==0){
                 direction = strtok(NULL, " "); //second call strok
                 strcat(direction,"");
@@ -155,10 +176,10 @@ void * socketThread(void *arg){
                 }
                 strcpy(server_message,"");
                 memset(buffer, 0, sizeof(buffer));
-                sprintf(buffer,"Player MOVE %s, to %d-%d",direction,current_user->x,current_user->y);
+                sprintf(buffer,"Player %s MOVE %s to %d-%d",current_user->username,direction,current_user->x,current_user->y);
                 strcat(server_message,buffer);
                 strcat(server_message,"");
-                printf("%s\n", server_message);
+                printf("%s\n",server_message);
                 send(newSocket,server_message,strlen(server_message),0);
             }
             else
@@ -173,32 +194,48 @@ void * socketThread(void *arg){
             }
             else
             if(strcmp(client_message_type,"ATTACK")==0){
-                send(newSocket,"ATTACK",2048,0);
+                if(current_user->x == monster_x &&current_user->y == monster_y){
+                    damage = USER_DAMAGE*(rand()%12+1);
+                    monster_hp -= damage;
+                    if(monster_hp < 0) monster_hp =0;
+                    strcpy(server_message,"");
+                    memset(buffer, 0, sizeof(buffer));
+                    sprintf(buffer,"Player %s attack monster for %d damage, remaining %d",current_user->username,damage,monster_hp);
+                    strcat(server_message,buffer);
+                    printf("%s\n",server_message);
+                    send(newSocket,server_message,strlen(server_message),0);
+                }
+                else send(newSocket,"ATTACK MISSED",2048,0);
             }
             else{
                 send(newSocket,"Invalid command, input HELP for detail",2048,0);
                 continue;
             }
             
+            
             if(active_user->next==NULL){ // if next user is null, revert back to first player and end player turn (calculate monster damage)
                 active_user = user_data;
+                temp = user_data;
+                
                 printf("End player turn.\n");
                 //Monster attack
+                damage = MONSTER_DAMAGE*(rand()%12+1);
+                temp->HP -= damage;
+                if(temp->HP<0) temp->HP=0;
+                printf("Monster attack %s for %d damage, remaining %d\n",temp->username,damage,temp->HP);
 
-                for(temp = user_data; temp ; temp=temp->next){
-                    temp->is_defending=0;
-                }
             } 
             else{
                 active_user=active_user->next;
             }
+
         }else send(newSocket,"It is not your turn yet!",128,0);
         
 
         //clean the message variable
     }
 
-    printf("user exited. \n");
+    printf("User exited. \n");
     close(newSocket);
     pthread_exit(NULL);
 }
@@ -236,6 +273,7 @@ int main(){
     monster_hp = 200;
 
     int i = 0;
+    srand (time(NULL));
 
     while(1){
         //Accept call creates a new socket for the incoming connection
