@@ -94,6 +94,11 @@ void * socketThread(void *arg){
 
         //At least 1 player active
         //Command
+        if(strcmp("EXIT",client_message)==0) {
+            current_user->HP=0;
+            break_flip=0;
+            continue;
+        }
         if(strcmp(client_message_type,"HELP")==0){
             strcpy(server_message,"COMMAND: \n");
             strcat(server_message,"- HELP : show command. \n");
@@ -112,11 +117,14 @@ void * socketThread(void *arg){
             user_count=0;
             for(temp = user_data; temp ; temp=temp->next){
                 user_count++;
+                memset(buffer, 0, sizeof(buffer));
                 sprintf(buffer,"\t + %s: %d/100 location: %d-%d \n", temp->username, temp->HP, temp->x, temp->y);
                 strcat(server_message,buffer);
             }
+            memset(buffer, 0, sizeof(buffer));
             sprintf(buffer,"Total: %d player(s) \n",user_count);
             strcat(server_message,buffer);
+            memset(buffer, 0, sizeof(buffer));
             sprintf(buffer,"- Monster: %d/200 location: %d-%d \n",monster_hp,monster_x,monster_y);
             strcat(server_message,buffer);
             send(newSocket,server_message,strlen(server_message),0);
@@ -132,6 +140,7 @@ void * socketThread(void *arg){
             //Make a move
             if(strcmp(client_message_type,"MOVE")==0){
                 direction = strtok(NULL, " "); //second call strok
+                strcat(direction,"");
                 if(strcmp(direction,"UP")==0){
                     if(current_user->y<MAP_HEIGHT) current_user->y++;
                 }
@@ -145,19 +154,24 @@ void * socketThread(void *arg){
                     if(current_user->x<MAP_WIDTH) current_user->x++;
                 }
                 strcpy(server_message,"");
+                memset(buffer, 0, sizeof(buffer));
                 sprintf(buffer,"Player MOVE %s, to %d-%d",direction,current_user->x,current_user->y);
                 strcat(server_message,buffer);
+                strcat(server_message,"");
+                printf("%s\n", server_message);
                 send(newSocket,server_message,strlen(server_message),0);
             }
-
+            else
             if(strcmp(client_message_type,"DEFEND")==0){
                 current_user->is_defending = 1;
                 strcpy(server_message,"");
+                memset(buffer, 0, sizeof(buffer));
+                printf("%s\n",buffer);
                 sprintf(buffer,"Player is defending");
                 strcat(server_message,buffer);
                 send(newSocket,server_message,strlen(server_message),0);
             }
-
+            else
             if(strcmp(client_message_type,"ATTACK")==0){
                 send(newSocket,"ATTACK",2048,0);
             }
@@ -165,8 +179,6 @@ void * socketThread(void *arg){
                 send(newSocket,"Invalid command, input HELP for detail",2048,0);
                 continue;
             }
-
-            send(newSocket,server_message,strlen(server_message),0);
             
             if(active_user->next==NULL){ // if next user is null, revert back to first player and end player turn (calculate monster damage)
                 active_user = user_data;
@@ -182,7 +194,7 @@ void * socketThread(void *arg){
             }
         }else send(newSocket,"It is not your turn yet!",128,0);
         
-        if(strcmp("exit",client_message)==0) break_flip=0;
+
         //clean the message variable
     }
 

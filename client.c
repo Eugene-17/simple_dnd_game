@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
         //empty message
         memset(server_message, 0, sizeof(server_message));
         memset(client_message, 0, sizeof(client_message));
-        printf("Your command     : ");
+        printf("%s\'s command     : ",username);
         get_input(client_message);
 
         if(DEBUG) printf("Sent data: \"%s\"\n", client_message);
