@@ -13,7 +13,7 @@
 
 #define MAXLINE 4096 /*max text line length*/
 #define SERV_PORT 3000 /*port*/
-#define MESSAGE_SIZE 128
+#define MESSAGE_SIZE 2048
 
 int main(int argc, char **argv) {
 
@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
         }
         
         //Print the received client_message
-        if(DEBUG) printf("Data received: %s\n", server_message);
+        printf("Server reply: %s\n", server_message);
         if(strcmp("EXIT",client_message)==0) break;
     }
     close(clientSocket);

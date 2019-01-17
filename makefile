@@ -31,4 +31,4 @@ clean :
 	rm test server client server.o client.o test.o login.o util.o
 
 clean-o :
-	rm server.o client.o test.o login.o util.o
+	rm server.o client.o test.o login.o util.o gameplay.o

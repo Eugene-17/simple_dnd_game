@@ -2,6 +2,7 @@
 
 user_node* create_new_user(char* username, int x, int y){
     user_node* node = malloc(sizeof(user_node));
+    node->HP = 100;
     node->username = strdup(username);
     node->x = x;
     node->y = y;
@@ -34,6 +35,7 @@ void print_user_list(user_node* head){
         printf("- %s  %d:%d\n", current->username,current->x, current->y);
     }
 }
+
 
 user_node* find_user(user_node* head, char* username){
     user_node* current;

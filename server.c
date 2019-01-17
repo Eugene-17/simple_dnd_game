@@ -7,13 +7,14 @@
 #include<fcntl.h> // for open
 #include<unistd.h> // for close
 #include<pthread.h>
+#include<time.h>
 
 #include "util.h"
 #include "login.h"
 #include "gameplay.h"
 
 #define MAX_THREAD 64
-#define MESSAGE_SIZE 128
+#define MESSAGE_SIZE 2048
 #define MAP_WIDTH 2
 #define MAP_HEIGHT 2
 
@@ -25,6 +26,9 @@ user_node* active_user;
 
 int user_counter;
 int turn_counter;
+int dice;
+
+int monster_x, monster_y, monster_hp;
 
 void * socketThread(void *arg){
     int newSocket = *((int *)arg);
@@ -32,13 +36,20 @@ void * socketThread(void *arg){
 
     char client_message[MESSAGE_SIZE];
     char server_message[MESSAGE_SIZE];
+    char buffer[64];
 
     user_node* current_user;
+    user_node* temp;
+
     current_user=NULL;
+
     int login_flip;
+    int user_count;
+
     char* username;
     char* password;
     char* client_message_type;
+    char* direction;
 
     //Main loop
     while(break_flip){
@@ -52,6 +63,8 @@ void * socketThread(void *arg){
         if(DEBUG) printf("Thead %d: \"%s\"\n", newSocket ,client_message);
 
         client_message_type = strtok(client_message, " "); //first call strok
+
+
 
         if(strcmp(client_message_type,"LOGIN")==0){
             username = strtok(NULL, " "); //second call strok
@@ -78,21 +91,90 @@ void * socketThread(void *arg){
             continue;
         }
 
-        //At least 1 player
+        //At least 1 player active
+        //Command
+        if(strcmp(client_message_type,"HELP")==0){
+            strcpy(server_message,"COMMAND: \n");
+            strcat(server_message,"- HELP : show command. \n");
+            strcat(server_message,"- MOVE <DIRECTION> : move up down left right. \n");
+            strcat(server_message,"- ATTACK: if same space with monster, user can attack. \n");
+            strcat(server_message,"- DEFEND: decease damage taken this turn. \n");
+            strcat(server_message,"- INFO: show infomation of player(s). \n");
+            strcat(server_message,"- EXIT: exit the client. \n");
+            send(newSocket,server_message,strlen(server_message),0);
+            continue;
+        }
 
+        if(strcmp(client_message_type,"INFO")==0){
+            strcpy(server_message,"INFO: \n");
+            strcat(server_message,"- USER : \n");
+            user_count=0;
+            for(temp = user_data; temp ; temp=temp->next){
+                user_count++;
+                sprintf(buffer,"\t + %s: %d/100 location: %d-%d \n", temp->username, temp->HP, temp->x, temp->y);
+                strcat(server_message,buffer);
+            }
+            sprintf(buffer,"Total: %d player(s) \n",user_count);
+            strcat(server_message,buffer);
+            sprintf(buffer,"- Monster: %d/200 location: %d-%d \n",monster_hp,monster_x,monster_y);
+            strcat(server_message,buffer);
+            send(newSocket,server_message,strlen(server_message),0);
+            continue;
+        }
+
+        //Turn bound actions:
         printf("Active user is: %s\n",active_user->username);
         //Send message to the client socket 
 
         if(current_user == active_user){
+
             //Make a move
-            strcpy(server_message,client_message);
-            //Make a move
+            if(strcmp(client_message_type,"MOVE")==0){
+                direction = strtok(NULL, " "); //second call strok
+                if(strcmp(direction,"UP")==0){
+                    if(current_user->y<MAP_HEIGHT) current_user->y++;
+                }
+                if(strcmp(direction,"DOWN")==0){
+                    if(current_user->y>0) current_user->y--;
+                }
+                if(strcmp(direction,"LEFT")==0){
+                    if(current_user->x>0) current_user->x--;
+                }
+                if(strcmp(direction,"RIGHT")==0){
+                    if(current_user->x<MAP_WIDTH) current_user->x++;
+                }
+                strcpy(server_message,"");
+                sprintf(buffer,"Player MOVE %s, to %d-%d",direction,current_user->x,current_user->y);
+                strcat(server_message,buffer);
+                send(newSocket,server_message,strlen(server_message),0);
+            }
+
+            if(strcmp(client_message_type,"DEFEND")==0){
+                current_user->is_defending = 1;
+                strcpy(server_message,"");
+                sprintf(buffer,"Player is defending");
+                strcat(server_message,buffer);
+                send(newSocket,server_message,strlen(server_message),0);
+            }
+
+            if(strcmp(client_message_type,"ATTACK")==0){
+                send(newSocket,"ATTACK",2048,0);
+            }
+            else{
+                send(newSocket,"Invalid command, input HELP for detail",2048,0);
+                continue;
+            }
 
             send(newSocket,server_message,strlen(server_message),0);
             
             if(active_user->next==NULL){ // if next user is null, revert back to first player and end player turn (calculate monster damage)
                 active_user = user_data;
-                printf("end player turn.\n");
+                printf("End player turn.\n");
+                //Monster attack
+
+                for(temp = user_data; temp ; temp=temp->next){
+                    temp->is_defending=0;
+                }
             } 
             else{
                 active_user=active_user->next;
@@ -136,7 +218,12 @@ int main(){
     user_data = NULL;
     pthread_t tid[MAX_THREAD];
     
+    monster_x = 2;
+    monster_y = 2;
+    monster_hp = 200;
+
     int i = 0;
+
     while(1){
         //Accept call creates a new socket for the incoming connection
         addr_size = sizeof serverStorage;

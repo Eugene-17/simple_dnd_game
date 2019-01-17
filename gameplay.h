@@ -23,6 +23,7 @@ user_node* create_new_user(char* username, int x, int y);
 user_node* find_user(user_node* head, char* username);
 void add_user(user_node* head,user_node* node);
 void print_user_list(user_node* head);
+void user_info(user_node* head, char* message);
 
 //Gameplay
 void decrease_hp(user_node* user, int amount);
