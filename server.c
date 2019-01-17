@@ -56,6 +56,7 @@ void * socketThread(void *arg){
 
         memset(server_message, 0, sizeof(server_message));
         memset(client_message, 0, sizeof(client_message));
+        memset(buffer, 0, sizeof(buffer));
 
         if(recv(newSocket, client_message, MESSAGE_SIZE, 0) < 0){
             printf("Receive failed\n");
