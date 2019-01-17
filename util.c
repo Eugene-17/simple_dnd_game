@@ -22,8 +22,8 @@ char *trimwhitespace(char *str){
 // get input from stdin and remove trailing linebreak, if string is "\n" then convert it to ""
 void get_input(char* command){
   fgets(command,128,stdin);
-  command = strtok(command, "\n");
   if(strcmp(command,"\n")==0) strcpy(command,"");
+  command = strtok(command, "\n");
 }
 
 //get a string, return 1 if string contain whitespace, 2 if string is empty or null

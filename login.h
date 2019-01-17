@@ -19,5 +19,6 @@ void print_login_info(login_node* head);
 
 //check if the login is successful and return an int (1: success, 0: fail, -1: wrong password)
 int check_login(login_node* head, char* username, char* password);
+void free_login(login_node* head);
 
 #endif /* LOGIN_H */

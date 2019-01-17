@@ -20,6 +20,8 @@ int main(int argc, char **argv) {
     char username[32];
     char password[32];
 
+    int is_my_turn;
+
     char client_message[MESSAGE_SIZE];
     char server_message[MESSAGE_SIZE];
 
@@ -99,7 +101,7 @@ int main(int argc, char **argv) {
             printf("Receive failed\n");
         }
         //Print the received client_message
-        printf("Data received: \"%s\"\n", server_message);
+        if(DEBUG) printf("Data received: \"%s\"\n", server_message);
         if(strcmp("NOUSER",server_message)==0) printf("Can't find that user!\n");
         if(strcmp("WRONGPASS",server_message)==0) printf("Wrong password!\n");
         if(strcmp("OK",server_message)==0) break;
@@ -113,7 +115,9 @@ int main(int argc, char **argv) {
         memset(client_message, 0, sizeof(client_message));
         printf("Your command     : ");
         get_input(client_message);
-        
+
+        if(DEBUG) printf("Sent data: \"%s\"\n", client_message);
+
         if(send(clientSocket , client_message , strlen(client_message) , 0) < 0){
             printf("Send failed\n");
         }
@@ -122,11 +126,10 @@ int main(int argc, char **argv) {
         if(recv(clientSocket, server_message, MESSAGE_SIZE, 0) < 0){
             printf("Receive failed\n");
         }
-
-        printf("Sent data: %s\n", client_message);
+        
         //Print the received client_message
-        printf("Data received: %s\n", server_message);
-        if(strcmp("exit",client_message)==0) break;
+        if(DEBUG) printf("Data received: %s\n", server_message);
+        if(strcmp("EXIT",client_message)==0) break;
     }
     close(clientSocket);
 

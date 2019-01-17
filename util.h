@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#define DEBUG 1
 
 char *trimwhitespace(char *str);
 

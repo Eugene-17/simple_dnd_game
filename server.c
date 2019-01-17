@@ -10,14 +10,21 @@
 
 #include "util.h"
 #include "login.h"
+#include "gameplay.h"
 
 #define MAX_THREAD 64
 #define MESSAGE_SIZE 128
-
+#define MAP_WIDTH 2
+#define MAP_HEIGHT 2
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 login_node* login_database; // store login database taken from txt file
+user_node* user_data;
+user_node* active_user;
+
+int user_counter;
+int turn_counter;
 
 void * socketThread(void *arg){
     int newSocket = *((int *)arg);
@@ -26,42 +33,74 @@ void * socketThread(void *arg){
     char client_message[MESSAGE_SIZE];
     char server_message[MESSAGE_SIZE];
 
-    int check_login_flip;
+    user_node* current_user;
+    current_user=NULL;
+    int login_flip;
     char* username;
     char* password;
     char* client_message_type;
 
+    //Main loop
     while(break_flip){
+
         memset(server_message, 0, sizeof(server_message));
         memset(client_message, 0, sizeof(client_message));
+
         if(recv(newSocket, client_message, MESSAGE_SIZE, 0) < 0){
             printf("Receive failed\n");
         }
-        strcat(client_message,"");
-        printf("Thead %d: \"%s\"\n", newSocket ,client_message);
+        if(DEBUG) printf("Thead %d: \"%s\"\n", newSocket ,client_message);
 
         client_message_type = strtok(client_message, " "); //first call strok
 
         if(strcmp(client_message_type,"LOGIN")==0){
             username = strtok(NULL, " "); //second call strok
             password = strtok(NULL, " "); //third call strok
-            check_login_flip = check_login(login_database,username,password);
+            login_flip = check_login(login_database,username,password);
 
-            if(check_login_flip == 1) strcpy(server_message,"OK");
-            if(check_login_flip == 0) strcpy(server_message,"NOUSER");
-            if(check_login_flip == -1) strcpy(server_message,"WRONGPASS");
+            if(login_flip == 1) {
+                //create new user
+                if(user_data==NULL){ //if is first player
+                    user_data = create_new_user(username,1,1);
+                    current_user = active_user = user_data; //become the first active player
+                }
+                else add_user(user_data, create_new_user(username,1,1));
+                if(DEBUG) print_user_list(user_data);
+
+                printf("Player %s joined the game.\n", username);
+
+                strcpy(server_message,"OK");
+            }
+            if(login_flip == 0) strcpy(server_message,"NOUSER");
+            if(login_flip == -1) strcpy(server_message,"WRONGPASS");
 
             send(newSocket,server_message,strlen(server_message),0);
             continue;
         }
 
+        //At least 1 player
 
-        // Send message to the client socket 
-        strcpy(server_message,client_message);
-        send(newSocket,server_message,strlen(server_message),0);
+        printf("Active user is: %s\n",active_user->username);
+        //Send message to the client socket 
+
+        if(current_user == active_user){
+            //Make a move
+            strcpy(server_message,client_message);
+            //Make a move
+
+            send(newSocket,server_message,strlen(server_message),0);
+            
+            if(active_user->next==NULL){ // if next user is null, revert back to first player and end player turn (calculate monster damage)
+                active_user = user_data;
+                printf("end player turn.\n");
+            } 
+            else{
+                active_user=active_user->next;
+            }
+        }else send(newSocket,"It is not your turn yet!",128,0);
+        
         if(strcmp("exit",client_message)==0) break_flip=0;
         //clean the message variable
-    
     }
 
     printf("user exited. \n");
@@ -94,7 +133,7 @@ int main(){
     else printf("Error\n");
     
     login_database = read_login_info("login_info.txt"); // get login info from txt file
-
+    user_data = NULL;
     pthread_t tid[MAX_THREAD];
     
     int i = 0;
@@ -114,5 +153,8 @@ int main(){
             i = 0;
         }
     }
+
+    free_login(login_database);
+
   return 0;
 }

@@ -63,3 +63,14 @@ int check_login(login_node* head, char* username, char* password){
 
     return 0;
 };
+
+void free_login(login_node* head){
+    login_node* tmp;
+
+    while (head != NULL){
+        tmp = head;
+        head = head->next;
+        free(tmp);
+    }
+
+}
